@@ -15,5 +15,12 @@
   "bugs": {
     "url": "https://github.com/jodaka/yadropdown/issues"
   },
-  "homepage": "https://github.com/jodaka/yadropdown"
+  "homepage": "https://github.com/jodaka/yadropdown",
+  "dependencies": {
+    "browser-sync": "^2.7.5",
+    "gulp": "^3.8.11",
+    "gulp-load-plugins": "^0.10.0",
+    "require-dir": "^0.3.0",
+    "run-sequence": "^1.1.0"
+  }
 }
