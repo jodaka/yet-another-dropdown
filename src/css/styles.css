@@ -8,8 +8,7 @@ html {
 }
 
 
-#aka-dropdown-click-catcher
-{
+#aka-dropdown-click-catcher {
     position: absolute;
     top: 0;
     bottom: 0;
@@ -31,27 +30,22 @@ html {
     padding: 2px;
 }
 
-.aka-dropdown .input
-{
-
+.aka-dropdown .input{
     font-size: 14px;
     padding: 12px 6px 12px 8px;
     color: rgb(119, 119, 119);
     border: 0px;
     width: 100%;
     box-sizing: border-box;
-
 }
 
-.aka-dropdown .input:focus
-{
+.aka-dropdown .input:focus {
     border: 0px;
     outline: none;
     color: #000;
 }
 
-.aka-dropdown .suggestions-holder
-{
+.aka-dropdown .suggestions-holder {
     position: absolute;
     z-index: 200;
     background-color: #FFF;
@@ -79,7 +73,11 @@ html {
   vertical-align: top;
 }
 
-.aka-dropdown .selected
-{
+.aka-dropdown .selected {
     background-color: #f1f5f9;
+}
+
+.aka-dropdown .highlight {
+    background-color: #dae2e8;
+    font-weight: bold;
 }

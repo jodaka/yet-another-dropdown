@@ -115,7 +115,26 @@
         };
 
         var filterSuggestions = function ( suggestions, value ) {
-            search.data = suggestions;
+
+            search.data = [];
+
+            var searchTermLooksLikeRussian = /[а-я]/i.test(value);
+            var regexp_ru = new RegExp( searchTermLooksLikeRussian ? value : _.translit( value, -5), "i" );
+            var regexp_en = new RegExp( searchTermLooksLikeRussian ? _.translit( value, 5) : value, "i" );
+
+            for (var i = 0, len = suggestions.length; i < len; i++) {
+
+                var fio_original = suggestions[i].first_name + ' ' + suggestions[i].last_name;
+                var fioLooksLikeRussian = /[а-я]/i.test(fio_original);
+
+                var fio_rus = (fioLooksLikeRussian) ? fio_original : _.translit( fio_original, -5);
+                var fio_en  = (fioLooksLikeRussian) ? _.translit( fio_original, 5) : fio_original;
+
+                if (regexp_ru.test( fio_original ) || regexp_en.test( fio_en ) ) {
+                    search.data.push( suggestions[i] );
+                }
+            }
+
             search.value = value;
         };
 
@@ -124,6 +143,11 @@
             var isSelected = false;
             var tags = {};
             var fio = data.first_name + ' ' + data.last_name;
+
+            var r = new RegExp ( search.value, "gi" );
+            fio = fio.replace(r, function(str) {
+                return '<span class="highlight">' + str + '</span>';
+            });
 
             var select = function () {
                 if ( !isSelected ) {
@@ -157,7 +181,7 @@
                 }
 
                 tags.fioHolder = _.createElement( 'div', 'fio' );
-                tags.fioHolder.appendChild( d.createTextNode( fio ) );
+                tags.fioHolder.innerHTML = fio;
 
                 tags.wrapper.appendChild( tags.fioHolder );
             };
