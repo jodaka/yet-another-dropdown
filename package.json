@@ -1,0 +1,19 @@
+{
+  "name": "yadropdown",
+  "version": "1.0.0",
+  "description": "Yet Another Dropdown (UI component)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "github.com/jodaka/yadropdown"
+  },
+  "author": "Anton Kudris",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jodaka/yadropdown/issues"
+  },
+  "homepage": "https://github.com/jodaka/yadropdown"
+}
