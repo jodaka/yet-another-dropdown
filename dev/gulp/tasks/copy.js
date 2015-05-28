@@ -4,7 +4,7 @@ var config  = require('../config');
 var browserSync = require('browser-sync');
 
 gulp.task('copy-js', function() {
-    gulp.src(config.paths.src + '/js/*.js')
+    gulp.src(config.paths.src + '/js/dropdown.js')
       .pipe(gulp.dest(config.paths.www_site + '/js/'));
 });
 

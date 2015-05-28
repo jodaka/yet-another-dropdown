@@ -175,7 +175,6 @@
                 console.log( 'removing bubble ', selectedSuggestions );
             };
 
-
             return this;
         };
 
