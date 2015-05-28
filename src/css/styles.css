@@ -1,6 +1,6 @@
 html {
-  background-color: #f7f7f7;
-  box-sizing: border-box;
+    background-color: #f7f7f7;
+    box-sizing: border-box;
 }
 
 * {
@@ -71,8 +71,8 @@ html {
 
 .aka-dropdown .avatar-holder,
 .aka-dropdown .fio {
-  display: inline-block;
-  vertical-align: top;
+    display: inline-block;
+    vertical-align: top;
 }
 
 .aka-dropdown .selected {
@@ -100,7 +100,7 @@ html {
     vertical-align: middle;
 }
 
-.bubble-action {
+.aka-dropdown .bubble-action {
   padding: 0px 8px;
 }
 
@@ -110,4 +110,9 @@ html {
     background-image: url('http://st0.vk.me/images/pics/im_tabx_2x.png');
     background-position: 0px 20px;
     background-size: cover;
+}
+
+.aka-dropdown .no-results {
+    background-color: #f1f1f1;
+    padding: 12px;
 }

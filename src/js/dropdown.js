@@ -11,6 +11,12 @@
             'multiselect': true
         };
 
+        // let's imagine we've included localized resources here
+        var i18n = {
+            no_suggestions_found: 'Пользователь не найден',
+            enter_name: 'Введите имя друга'
+        };
+
         var search = {
             value: null,
             data: null,
@@ -30,7 +36,7 @@
             tags.input = d.createElement( 'input' );
             tags.input.setAttribute( 'type', 'text' );
             tags.input.setAttribute( 'class', 'input' );
-            tags.input.setAttribute( 'placeholder', 'Введите имя друга' );
+            tags.input.setAttribute( 'placeholder', i18n.enter_name );
 
             tags.holder.appendChild( tags.input );
         };
@@ -341,7 +347,6 @@
 
                 if ( match_ru || match_en || match_toggledKeymap ) {
 
-                    console.warn( 'AAAA ', suggestions[ i ].id );
                     // filtering out already added suggestions
                     if ( !bubblesList.has( suggestions[ i ].id ) ) {
                         search.data.push( suggestions[ i ] );
@@ -508,10 +513,20 @@
 
             search.items = [];
 
-            for ( var i = 0, len = search.data.length; i < len; i++ ) {
-                var item = suggestionElement( search.data[ i ], i );
-                search.items.push( item );
-                tags.suggestionHolder.appendChild( item.getHTML() );
+            if (search.data.length > 0) {
+
+                for ( var i = 0, len = search.data.length; i < len; i++ ) {
+                    var item = suggestionElement( search.data[ i ], i );
+                    search.items.push( item );
+                    tags.suggestionHolder.appendChild( item.getHTML() );
+                }
+
+            } else {
+
+                var noResults = _.createElement( 'div', 'no-results');
+                    noResults.appendChild( d.createTextNode( i18n.no_suggestions_found ) );
+
+                tags.suggestionHolder.appendChild( noResults );
             }
 
             _.show( tags.suggestionHolder );
