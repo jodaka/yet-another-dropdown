@@ -60,7 +60,9 @@ html {
 }
 
 .aka-dropdown .avatar {
-    border-radius: 3px;
+    border-radius: 4px;
+    width: 50px;
+    height: 50px;
 }
 
 .aka-dropdown .avatar-holder {
@@ -80,4 +82,31 @@ html {
 .aka-dropdown .highlight {
     background-color: #dae2e8;
     font-weight: bold;
+}
+
+.aka-dropdown .bubble-holder {
+    background-color: #45688E;
+    color: #fff;
+    border-radius: 4px;
+    padding: 4px 8px;
+    white-space: nowrap;
+    display: inline-block;
+}
+
+.aka-dropdown .bubble-action,
+.aka-dropdown .bubble-fio {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.bubble-action {
+  padding: 0px 8px;
+}
+
+.aka-dropdown .icon-remove {
+    width: 15px;
+    height: 23px;
+    background-image: url('http://st0.vk.me/images/pics/im_tabx_2x.png');
+    background-position: 0px 20px;
+    background-size: cover;
 }

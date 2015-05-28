@@ -5,6 +5,7 @@
 
         var self = el;
 
+        // default settings
         var settings = {
             'use_avatars': true,
             'multiselect': false
@@ -17,30 +18,59 @@
             selected: -1
         };
 
-        var hasFocus = false;
-        self.clickCatcher = null;
-
-        self.holder = d.createElement( 'div' );
-        _.addClass( self.holder, 'holder' );
-        self.appendChild( self.holder );
-
-        self.input = d.createElement( 'input' );
-        self.input.setAttribute( 'type', 'text' );
-        self.input.setAttribute( 'class', 'input' );
-        self.input.setAttribute( 'placeholder', 'Введите имя друга' );
-
-        var onInputFocus = function ( evt ) {
-            hasFocus = true;
+        var tags = {
+            clickCatcher: null
         };
 
-        var onInputBlur = function ( evt ) {
-            hasFocus = false;
+        var selectedSuggestions = [];
+
+        var buildDropdownHTML = function () {
+            tags.holder = d.createElement( 'div' );
+            _.addClass( tags.holder, 'holder' );
+            self.appendChild( tags.holder );
+
+            tags.input = d.createElement( 'input' );
+            tags.input.setAttribute( 'type', 'text' );
+            tags.input.setAttribute( 'class', 'input' );
+            tags.input.setAttribute( 'placeholder', 'Введите имя друга' );
+
+            tags.holder.appendChild( tags.input );
         };
+
+        buildDropdownHTML();
+
+
+        var parseSettings = function ( conf ) {
+
+            if ( conf !== null ) {
+                console.warn( '!!!!', conf );
+                try {
+                    conf = JSON.parse( conf );
+                    console.warn( '-------', conf );
+                    if ( typeof conf.use_avatars !== 'undefined' ) {
+                        settings.use_avatars = conf.use_avatars;
+                    }
+
+                } catch ( e ) {
+                    console.warn( "Couldn't parse dropdown settings ", e );
+                }
+            }
+
+        };
+
+        parseSettings( self.getAttribute( 'data-settings' ) );
+
+        // var onInputFocus = function ( evt ) {
+        //     hasFocus = true;
+        // };
+
+        // var onInputBlur = function ( evt ) {
+        //     hasFocus = false;
+        // };
 
         var onInputKeyPress = function ( evt ) {
             console.log( 'input key', evt );
-
-            loadSuggestions( self.input.value );
+            loadSuggestions( tags.input.value );
         };
 
         var onInputKeyDown = function ( evt ) {
@@ -60,17 +90,24 @@
 
                 case 40: // Down arrow
                     evt.preventDefault();
-                    kbdSelectSuggestion('next');
+
+                    // if suggest isn't visible, let's open it
+                    if (tags.clickCatcher === null) {
+                        loadSuggestions();
+                        return;
+                    }
+
+                    kbdSelectSuggestion( 'next' );
                     return;
 
                 case 38: // Up arrow
                     evt.preventDefault();
-                    kbdSelectSuggestion('prev');
+                    kbdSelectSuggestion( 'prev' );
                     return false;
 
                 case 8: // Backspace
-                    onInputKeyPress();
-                    return false;
+                    console.log( 'Backspace' );
+                    setTimeout( onInputKeyPress, 0 );
             }
 
             return true;
@@ -83,7 +120,7 @@
 
             var add, borderCondition;
 
-            if (direction === 'next') {
+            if ( direction === 'next' ) {
                 add = 1;
                 borderCondition = search.selected < search.items.length;
             } else {
@@ -96,8 +133,62 @@
                 search.selected += add;
                 search.items[ search.selected ].select();
                 search.items[ search.selected ].getHTML().focus();
-                self.input.focus();
+                tags.input.focus();
             }
+        };
+
+
+        /**
+         * Suggestion bubble.
+         *
+         * @param {[type]} suggestionData [description]
+         */
+        var SuggestionBubble = function ( suggestionData ) {
+
+            var fio = suggestionData.first_name + ' ' + suggestionData.last_name;
+            var index = null;
+            var holder = null;
+
+            this.add = function ( index ) {
+
+                index = index;
+
+                holder = _.createElement( 'div', 'bubble-holder' );
+                var fullname = _.createElement( 'div', 'bubble-fio' );
+                var removeBtn = _.createElement( 'div', 'bubble-action' );
+
+                fullname.appendChild( d.createTextNode( fio ) );
+                removeBtn.appendChild( _.createElement( 'div', 'icon-remove' ) );
+
+                _.addEventListener( removeBtn, 'click', this.remove );
+
+                holder.appendChild( fullname );
+                holder.appendChild( removeBtn );
+
+                tags.holder.insertBefore( holder, tags.input );
+                console.log( holder );
+            };
+
+            this.remove = function () {
+                selectedSuggestions = selectedSuggestions.splice( index, 1 );
+                tags.holder.removeChild( holder );
+                console.log( 'removing bubble ', selectedSuggestions );
+            };
+
+
+            return this;
+        };
+
+        /**
+         * Renders selected suggestion
+         * TODO
+         *
+         * @param  {[type]} data [description]
+         * @return {[type]}      [description]
+         */
+        var addSuggestionBubble = function ( data, index ) {
+
+
         };
 
         /**
@@ -105,9 +196,22 @@
          * @param  {[type]} argument [description]
          * @return {[type]}          [description]
          */
-        var confirmSuggestion = function ( argument ) {
+        var confirmSuggestion = function () {
 
-            // confirmation of suggestion
+            if ( search.selected !== -1 ) {
+
+                var newItem = search.items[ search.selected ].getData();
+                tags.input.value = '';
+
+                selectedSuggestions.push( newItem );
+
+                var bubble = new SuggestionBubble( newItem );
+                bubble.add( selectedSuggestions.length - 1 );
+
+                // renderConfirmedSuggestion( newItem, selectedSuggestions.length - 1 );
+
+                hideSuggestions();
+            }
         };
 
         /**
@@ -145,13 +249,20 @@
          */
         var filterSuggestions = function ( suggestions, value ) {
 
+            // no filtering is necessary for empty value
+            if ( typeof value === 'undefined' || value.length === 0 ) {
+                search.data = suggestions;
+                search.value = '';
+                return;
+            }
+
             search.data = [];
 
             var searchTermLooksLikeRussian = /[а-я]/i.test( value );
             var regexp_ru = new RegExp( searchTermLooksLikeRussian ? value : _.translit( value, -5 ), "i" );
             var regexp_en = new RegExp( searchTermLooksLikeRussian ? _.translit( value, 5 ) : value, "i" );
 
-            var toggleKeymapValue =  _.toggleKeymap( value, searchTermLooksLikeRussian );
+            var toggleKeymapValue = _.toggleKeymap( value, searchTermLooksLikeRussian );
 
             var regexp_keymap = new RegExp( toggleKeymapValue, "i" );
 
@@ -166,7 +277,7 @@
                 var match_ru = regexp_ru.test( fullName );
                 var match_en = regexp_en.test( fio_en );
 
-                var match_toggledKeymap =  (new RegExp( _.toggleKeymap( value, searchTermLooksLikeRussian ), "i" )).test( searchTermLooksLikeRussian ? fio_en : fio_rus );
+                var match_toggledKeymap = ( new RegExp( _.toggleKeymap( value, searchTermLooksLikeRussian ), "i" ) ).test( searchTermLooksLikeRussian ? fio_en : fio_rus );
                 // console.log( searchTermLooksLikeRussian, new RegExp( _.toggleKeymap( value, searchTermLooksLikeRussian ), "i" ), searchTermLooksLikeRussian ? fio_en : fio_rus, _.toggleKeymap( value, searchTermLooksLikeRussian ) );
 
                 if ( match_ru || match_en || match_toggledKeymap ) {
@@ -177,16 +288,21 @@
             search.value = value;
         };
 
-        var suggestionElement = function ( data, selectedEl ) {
+        /**
+         * TODO
+         * @param  {[type]} data       [description]
+         * @return {[type]}            [description]
+         */
+        var suggestionElement = function ( elementData, idx ) {
 
             var isSelected = false;
+            var data = elementData;
+            var index = idx;
             var tags = {};
-            var fio = data.first_name + ' ' + data.last_name;
 
-            var r = new RegExp( search.value, "gi" );
-            fio = fio.replace( r, function ( str ) {
-                return '<span class="highlight">' + str + '</span>';
-            } );
+            var getData = function () {
+                return data;
+            };
 
             var select = function () {
                 if ( !isSelected ) {
@@ -202,10 +318,21 @@
                 }
             };
 
+            var captureSelection = function () {
+
+                if ( search.selected > -1 ) {
+                    search.items[ search.selected ].unselect();
+                }
+
+                search.selected = index;
+                search.items[ search.selected ].select();
+            };
+
             var buildHTML = function () {
 
+
                 tags.html = _.createElement( 'div', 'suggestion' );
-                tags.html.setAttribute('tabindex', '-1');
+                tags.html.setAttribute( 'tabindex', '-1' );
 
                 tags.wrapper = _.createElement( 'div', 'suggestion-wrapper' );
                 tags.html.appendChild( tags.wrapper );
@@ -214,10 +341,20 @@
 
                     tags.avatarHolder = _.createElement( 'div', 'avatar-holder' );
                     tags.avatar = _.createElement( 'img', 'avatar' );
-                    tags.avatar.src = data.photo_50;
+                    tags.avatar.style.backgroundImage = "url('" + data.photo_50 + "')";
                     tags.avatarHolder.appendChild( tags.avatar );
 
                     tags.wrapper.appendChild( tags.avatarHolder );
+                }
+
+                var fio = data.first_name + ' ' + data.last_name;
+
+                // highlighting text
+                if ( search.value !== 'undefined' && search.value.length > 0 ) {
+                    var r = new RegExp( search.value, "gi" );
+                    fio = fio.replace( r, function ( str ) {
+                        return '<span class="highlight">' + str + '</span>';
+                    } );
                 }
 
                 tags.fioHolder = _.createElement( 'div', 'fio' );
@@ -228,11 +365,15 @@
 
             buildHTML();
 
-            if ( selectedEl ) {
+            _.addEventListener( tags.html, 'mouseenter', captureSelection );
+            _.addEventListener( tags.html, 'click', confirmSuggestion );
+
+            if ( idx === search.selected ) {
                 select();
             }
 
             return {
+                'getData': getData,
                 'getHTML': function getHTML() {
                     return tags.html;
                 },
@@ -248,13 +389,13 @@
         var hideSuggestions = function () {
 
             // removing clicks catcher
-            _.removeEventListener( self.clickCatcher, 'click', hideSuggestions );
-            d.body.removeChild( self.clickCatcher );
-            self.clickCatcher = null;
+            _.removeEventListener( tags.clickCatcher, 'click', hideSuggestions );
+            d.body.removeChild( tags.clickCatcher );
+            tags.clickCatcher = null;
 
             // cleaning suggestions
-            _.hide( self.suggestionHolder );
-            self.suggestionHolder.innerHTML = '';
+            _.hide( tags.suggestionHolder );
+            tags.suggestionHolder.innerHTML = '';
 
             // reset
             search = {
@@ -266,34 +407,36 @@
         };
 
         /**
-         * [renderSuggestions description]
+         * TODO
          * @param  {[type]} data  [description]
          * @param  {[type]} value [description]
          * @return {[type]}       [description]
          */
         var renderSuggestions = function () {
 
-            if ( self.clickCatcher === null ) {
-                self.clickCatcher = d.createElement( 'div' );
-                self.clickCatcher.setAttribute( 'id', 'aka-dropdown-click-catcher' );
+            console.warn( 'render suggestions', search.value );
 
-                _.addEventListener( self.clickCatcher, 'click', hideSuggestions );
+            if ( tags.clickCatcher === null ) {
+                tags.clickCatcher = d.createElement( 'div' );
+                tags.clickCatcher.setAttribute( 'id', 'aka-dropdown-click-catcher' );
 
-                d.body.appendChild( self.clickCatcher );
+                _.addEventListener( tags.clickCatcher, 'click', hideSuggestions );
+
+                d.body.appendChild( tags.clickCatcher );
             }
 
-            if ( typeof self.suggestionHolder === 'undefined' ) {
-                self.suggestionHolder = _.createElement( 'div', 'suggestions-holder' );
-                self.appendChild( self.suggestionHolder );
+            if ( typeof tags.suggestionHolder === 'undefined' ) {
+                tags.suggestionHolder = _.createElement( 'div', 'suggestions-holder' );
+                self.appendChild( tags.suggestionHolder );
 
-                self.suggestionHolder.style.width = self.clientWidth + 2 + 'px';
+                tags.suggestionHolder.style.width = self.clientWidth + 2 + 'px';
                 // to compensate for border
-                self.suggestionHolder.style.marginLeft = '-1px';
+                tags.suggestionHolder.style.marginLeft = '-1px';
             }
 
-            _.hide( self.suggestionHolder );
+            _.hide( tags.suggestionHolder );
 
-            self.suggestionHolder.innerHTML = '';
+            tags.suggestionHolder.innerHTML = '';
 
             if ( search.data.length > 0 ) {
                 search.selected = 0;
@@ -302,30 +445,34 @@
             search.items = [];
 
             for ( var i = 0, len = search.data.length; i < len; i++ ) {
-                var item = suggestionElement( search.data[ i ], i === search.selected );
+                var item = suggestionElement( search.data[ i ], i );
                 search.items.push( item );
-                self.suggestionHolder.appendChild( item.getHTML() );
+                tags.suggestionHolder.appendChild( item.getHTML() );
             }
 
-            _.show( self.suggestionHolder );
+            _.show( tags.suggestionHolder );
         };
 
-        _.addEventListener( self.input, 'focus', onInputFocus );
-        _.addEventListener( self.input, 'blur', onInputBlur );
-        _.addEventListener( self.input, 'keypress', _.debounce( onInputKeyPress, 50 ) );
-        _.addEventListener( self.input, 'keydown', onInputKeyDown );
-
-        self.holder.appendChild( self.input );
+        // _.addEventListener( self.input, 'focus', onInputFocus );
+        // _.addEventListener( self.input, 'blur', onInputBlur );
+        _.addEventListener( tags.input, 'keypress', _.debounce( onInputKeyPress, 50 ) );
+        _.addEventListener( tags.input, 'keydown', onInputKeyDown );
 
 
         // preload suggestions
         loadSuggestions( '', true );
 
-        // some interface
-        return {};
+        // some interface here
+        // to get selected suggestion possibly
+        return {
+            'getSelected': function () {
+                return selectedSuggestions;
+            }
+        };
     };
 
 
+    // init all dropdown on the page
     var dropdowns = d.querySelectorAll( '.aka-dropdown' );
     for ( var i = 0; i < dropdowns.length; i++ ) {
         dropdown( dropdowns[ i ] );
