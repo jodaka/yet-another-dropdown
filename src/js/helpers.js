@@ -85,10 +85,11 @@
     };
 
     _.removeEventListener = function ( el, evt, handler ) {
-        if ( el.removeEventListener )
+        if ( el.removeEventListener ) {
             el.removeEventListener( evt, handler );
-        else
+        } else {
             el.detachEvent( 'on' + evt, handler );
+        }
     };
 
     /**
@@ -120,55 +121,130 @@
         };
     };
 
+    // wrapper to create element and set classname
     _.createElement = function ( element, className ) {
         var el = d.createElement( element );
         el.setAttribute( 'class', className );
         return el;
     };
 
-    var matrix = [];
-    for ( var i = 0; i < 64; i++ ) {
-        matrix[ i ] = [ i ];
-        matrix[ i ].length = 64;
-    }
-    for ( i = 0; i < 64; i++ ) {
-        matrix[ 0 ][ i ] = i;
-    }
+    /**
+     * Damerau-Levenshtein distance calc function.
+     * grabbed from http://jsperf.com/damerau-levenshtein-distance
+     *
+     * @param  {String} source first strin
+     * @param  {String} target second string
+     * @param  {Number} limit  limit of
+     * @return {Number}        distance
+     */
+    _.damerauLevenshteinDistance = (function ( source, target, limit ) {
 
-    _.damerauLevenshteinDistance = function ( __this, that, limit ) {
-        var thisLength = __this.length,
-            thatLength = that.length;
-
-        if ( Math.abs( thisLength - thatLength ) > ( limit || 32 ) ) return limit || 32;
-        if ( thisLength === 0 ) return thatLength;
-        if ( thatLength === 0 ) return thisLength;
-
-        // Calculate matrix.
-        var this_i, that_j, cost, min, t;
-        for ( var i = 1; i <= thisLength; ++i ) {
-            this_i = __this[ i - 1 ];
-
-            // Step 4
-            for (var j = 1; j <= thatLength; ++j ) {
-                // Check the jagged ld total so far
-                if ( i === j && matrix[ i ][ j ] > 4 ) return thisLength;
-
-                that_j = that[ j - 1 ];
-                cost = ( this_i === that_j ) ? 0 : 1; // Step 5
-                // Calculate the minimum (much faster than Math.min(...)).
-                min = matrix[ i - 1 ][ j ] + 1; // Deletion.
-                if ( ( t = matrix[ i ][ j - 1 ] + 1 ) < min ) min = t; // Insertion.
-                if ( ( t = matrix[ i - 1 ][ j - 1 ] + cost ) < min ) min = t; // Substitution.
-
-
-                // Update matrix.
-                matrix[ i ][ j ] = ( i > 1 && j > 1 && this_i === that[ j - 2 ] && __this[ i - 2 ] === that_j && ( t = matrix[ i - 2 ][ j - 2 ] + cost ) < min ) ? t : min; // Transposition.
-            }
+        var matrix = [];
+        for ( var i = 0; i < 64; i++ ) {
+            matrix[ i ] = [ i ];
+            matrix[ i ].length = 64;
         }
 
-        return matrix[ thisLength ][ thatLength ];
-    };
+        for ( i = 0; i < 64; i++ ) {
+            matrix[ 0 ][ i ] = i;
+        }
 
+        return function( source, target, limit ) {
+            var thisLength = source.length,
+                thatLength = target.length;
+
+            if ( Math.abs( thisLength - thatLength ) > ( limit || 32 ) ) {
+                return limit || 32;
+            }
+
+            if ( thisLength === 0 ) return thatLength;
+            if ( thatLength === 0 ) return thisLength;
+
+            // Calculate matrix.
+            var this_i, that_j, cost, min, t;
+            for ( var i = 1; i <= thisLength; ++i ) {
+                this_i = source[ i - 1 ];
+
+                // Step 4
+                for (var j = 1; j <= thatLength; ++j ) {
+                    // Check the jagged ld total so far
+                    if ( i === j && matrix[ i ][ j ] > 4 ) return thisLength;
+
+                    that_j = that[ j - 1 ];
+                    cost = ( this_i === that_j ) ? 0 : 1; // Step 5
+
+                    // Calculate the minimum (much faster than Math.min(...)).
+                    min = matrix[ i - 1 ][ j ] + 1; // Deletion.
+                    if ( ( t = matrix[ i ][ j - 1 ] + 1 ) < min ) min = t; // Insertion.
+                    if ( ( t = matrix[ i - 1 ][ j - 1 ] + cost ) < min ) min = t; // Substitution.
+
+
+                    // Update matrix.
+                    matrix[ i ][ j ] = ( i > 1 && j > 1 && this_i === target[ j - 2 ] && source[ i - 2 ] === that_j && ( t = matrix[ i - 2 ][ j - 2 ] + cost ) < min ) ? t : min; // Transposition.
+                }
+            }
+
+            return matrix[ thisLength ][ thatLength ];
+        };
+
+    }());
+
+
+    /**
+     * A basic keymaps convertor EN <--> RU
+     * will convert 'fynjy' into 'anton' or 'фтещт' into 'anton'
+     *
+     * @param  {String}  str   original string to convert
+     * @param  {Boolean} isRus if true, will convert RU->EN, otherwise EN->RU
+     * @return {String}
+     */
+    _.toggleKeymap = (function( str, isRus ) {
+
+        // building hashmap to speedup lookups
+        var buildKeymap = function( ) {
+
+            var i, len, keymaps = {};
+
+            var keymappings = {
+                'ru': "абвгдеёжзийклмнопрстуфхцчшщъьыэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЬЫЭЮЯ",
+                'en': "f,dult`;pbqrkvyjghcnea[wxio]ms'.zF<DULT~:PBQRKVYJGHCNEA{WXIO}MS'>Z"
+            };
+
+            // building ru
+            keymaps.ru = {};
+            for (i = 0, len = keymappings.ru.length; i < len; i++) {
+                keymaps.ru[ keymappings.ru[ i ] ] = keymappings.en[ i ];
+            }
+
+            // building en
+            keymaps.en = {};
+            for (i = 0, len = keymappings.en.length; i < len; i++) {
+                keymaps.en[ keymappings.en[ i ] ] = keymappings.ru[ i ];
+            }
+
+            return keymaps;
+        };
+
+        var keymaps = buildKeymap();
+
+        return function( str, isRus ) {
+
+            var orig = (isRus) ? 'ru' : 'en';
+            var result = '';
+
+            for (var i = 0, len = str.length; i < len; i++) {
+
+                var letter = keymaps[orig][ str[ i ]];
+                result += (typeof letter !== 'undefined') ? letter : str[i];
+            }
+
+            return result;
+        };
+
+    }());
+
+
+    // everybody loves globals
     w._ = _;
 
 }( window, document ) );

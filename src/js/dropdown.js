@@ -46,42 +46,57 @@
         var onInputKeyDown = function ( evt ) {
             console.log( 'input keydown', evt );
 
-            // 40 DOWN
-            //
-            // 38 UP
-            //
-            // 13 Enter
-            //
-            // 27 ESC
-            //
             switch ( evt.keyCode ) {
 
-                case 27:
+                case 27: // ESC
+                    evt.preventDefault();
                     hideSuggestions();
-                    break;
+                    return;
 
-                case 13:
+                case 13: // Enter
+                    evt.preventDefault();
                     confirmSuggestion();
-                    break;
+                    return;
 
-                case 40:
-                    selectNextSuggestion();
-                    break;
+                case 40: // Down arrow
+                    evt.preventDefault();
+                    kbdSelectSuggestion('next');
+                    return;
 
-                case 38:
-                    selectPrevSuggestion();
-                    break;
+                case 38: // Up arrow
+                    evt.preventDefault();
+                    kbdSelectSuggestion('prev');
+                    return false;
+
+                case 8: // Backspace
+                    onInputKeyPress();
+                    return false;
             }
+
+            return true;
         };
 
-        var selectPrevSuggestion = function (argument) {
-            // body...
-        };
+        /**
+         * Keyboard navigation for previous suggestion
+         */
+        var kbdSelectSuggestion = function ( direction ) {
 
-        var selectNextSuggestion = function (argument) {
-            if (search.selected !== -1 && search.selected < search.items.length ) {
+            var add, borderCondition;
+
+            if (direction === 'next') {
+                add = 1;
+                borderCondition = search.selected < search.items.length;
+            } else {
+                add = -1;
+                borderCondition = search.selected > 0;
+            }
+
+            if ( search.selected !== -1 && borderCondition ) {
                 search.items[ search.selected ].unselect();
-                search.items[ ++search.selected ].select();
+                search.selected += add;
+                search.items[ search.selected ].select();
+                search.items[ search.selected ].getHTML().focus();
+                self.input.focus();
             }
         };
 
@@ -90,20 +105,24 @@
          * @param  {[type]} argument [description]
          * @return {[type]}          [description]
          */
-        var confirmSuggestion = function (argument) {
+        var confirmSuggestion = function ( argument ) {
 
             // confirmation of suggestion
         };
 
         /**
-         * [loadSuggestions description]
-         * @param  {[type]} value [description]
-         * @return {[type]}       [description]
+         * TODO
+         * Loading suggestions from server.
+         *
+         * @param  {String} value           filtering value
+         * @param  {Boolean} skipRender     if true, then it will just cache data
+         * @return {Array}                  suggestions
          */
         var loadSuggestions = function ( value, skipRender ) {
 
             _.getJSON( '/friends.json' ).then( function ( data ) {
                 if ( typeof data !== 'undefined' ) {
+
                     console.log( 'suggestions loaded' );
                     if ( !skipRender ) {
                         filterSuggestions( data.response.items, value );
@@ -114,24 +133,44 @@
 
         };
 
+        /**
+         * Main filtering function
+         *
+         * it would try to match strings in EN/RU, then it will try translit versions
+         * and toggled keymap
+         *
+         * @param  {Array} suggestions  list of all suggestions
+         * @param  {String} value       filtering string
+         * @return {Array}
+         */
         var filterSuggestions = function ( suggestions, value ) {
 
             search.data = [];
 
-            var searchTermLooksLikeRussian = /[а-я]/i.test(value);
-            var regexp_ru = new RegExp( searchTermLooksLikeRussian ? value : _.translit( value, -5), "i" );
-            var regexp_en = new RegExp( searchTermLooksLikeRussian ? _.translit( value, 5) : value, "i" );
+            var searchTermLooksLikeRussian = /[а-я]/i.test( value );
+            var regexp_ru = new RegExp( searchTermLooksLikeRussian ? value : _.translit( value, -5 ), "i" );
+            var regexp_en = new RegExp( searchTermLooksLikeRussian ? _.translit( value, 5 ) : value, "i" );
 
-            for (var i = 0, len = suggestions.length; i < len; i++) {
+            var toggleKeymapValue =  _.toggleKeymap( value, searchTermLooksLikeRussian );
 
-                var fio_original = suggestions[i].first_name + ' ' + suggestions[i].last_name;
-                var fioLooksLikeRussian = /[а-я]/i.test(fio_original);
+            var regexp_keymap = new RegExp( toggleKeymapValue, "i" );
 
-                var fio_rus = (fioLooksLikeRussian) ? fio_original : _.translit( fio_original, -5);
-                var fio_en  = (fioLooksLikeRussian) ? _.translit( fio_original, 5) : fio_original;
+            for ( var i = 0, len = suggestions.length; i < len; i++ ) {
 
-                if (regexp_ru.test( fio_original ) || regexp_en.test( fio_en ) ) {
-                    search.data.push( suggestions[i] );
+                var fullName = suggestions[ i ].first_name + ' ' + suggestions[ i ].last_name;
+                var fioLooksLikeRussian = /[а-я]/i.test( fullName );
+
+                var fio_rus = ( fioLooksLikeRussian ) ? fullName : _.translit( fullName, -5 );
+                var fio_en = ( fioLooksLikeRussian ) ? _.translit( fullName, 5 ) : fullName;
+
+                var match_ru = regexp_ru.test( fullName );
+                var match_en = regexp_en.test( fio_en );
+
+                var match_toggledKeymap =  (new RegExp( _.toggleKeymap( value, searchTermLooksLikeRussian ), "i" )).test( searchTermLooksLikeRussian ? fio_en : fio_rus );
+                // console.log( searchTermLooksLikeRussian, new RegExp( _.toggleKeymap( value, searchTermLooksLikeRussian ), "i" ), searchTermLooksLikeRussian ? fio_en : fio_rus, _.toggleKeymap( value, searchTermLooksLikeRussian ) );
+
+                if ( match_ru || match_en || match_toggledKeymap ) {
+                    search.data.push( suggestions[ i ] );
                 }
             }
 
@@ -144,10 +183,10 @@
             var tags = {};
             var fio = data.first_name + ' ' + data.last_name;
 
-            var r = new RegExp ( search.value, "gi" );
-            fio = fio.replace(r, function(str) {
+            var r = new RegExp( search.value, "gi" );
+            fio = fio.replace( r, function ( str ) {
                 return '<span class="highlight">' + str + '</span>';
-            });
+            } );
 
             var select = function () {
                 if ( !isSelected ) {
@@ -166,6 +205,7 @@
             var buildHTML = function () {
 
                 tags.html = _.createElement( 'div', 'suggestion' );
+                tags.html.setAttribute('tabindex', '-1');
 
                 tags.wrapper = _.createElement( 'div', 'suggestion-wrapper' );
                 tags.html.appendChild( tags.wrapper );
@@ -231,7 +271,7 @@
          * @param  {[type]} value [description]
          * @return {[type]}       [description]
          */
-        var renderSuggestions = function ( ) {
+        var renderSuggestions = function () {
 
             if ( self.clickCatcher === null ) {
                 self.clickCatcher = d.createElement( 'div' );
@@ -255,7 +295,7 @@
 
             self.suggestionHolder.innerHTML = '';
 
-            if (search.data.length > 0) {
+            if ( search.data.length > 0 ) {
                 search.selected = 0;
             }
 
