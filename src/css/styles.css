@@ -32,7 +32,7 @@ html {
 
 .aka-dropdown .input{
     font-size: 14px;
-    padding: 12px 6px 12px 8px;
+    padding: 10px 6px 11px 8px;
     color: rgb(119, 119, 119);
     border: 0px;
     width: 100%;
@@ -91,6 +91,7 @@ html {
     padding: 4px 8px;
     white-space: nowrap;
     display: inline-block;
+    margin: 4px 4px;
 }
 
 .aka-dropdown .bubble-action,

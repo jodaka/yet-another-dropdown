@@ -8,7 +8,7 @@
         // default settings
         var settings = {
             'use_avatars': true,
-            'multiselect': false
+            'multiselect': true
         };
 
         var search = {
@@ -21,8 +21,6 @@
         var tags = {
             clickCatcher: null
         };
-
-        var selectedSuggestions = [];
 
         var buildDropdownHTML = function () {
             tags.holder = d.createElement( 'div' );
@@ -40,17 +38,22 @@
         buildDropdownHTML();
 
 
+        /**
+         * Poor mans settings parser.
+         * @param  {[type]} conf [description]
+         * @return {[type]}      [description]
+         */
         var parseSettings = function ( conf ) {
 
             if ( conf !== null ) {
-                console.warn( '!!!!', conf );
                 try {
                     conf = JSON.parse( conf );
-                    console.warn( '-------', conf );
                     if ( typeof conf.use_avatars !== 'undefined' ) {
                         settings.use_avatars = conf.use_avatars;
                     }
-
+                    if ( typeof conf.multiselect !== 'undefined' ) {
+                        settings.multiselect = conf.multiselect;
+                    }
                 } catch ( e ) {
                     console.warn( "Couldn't parse dropdown settings ", e );
                 }
@@ -92,7 +95,7 @@
                     evt.preventDefault();
 
                     // if suggest isn't visible, let's open it
-                    if (tags.clickCatcher === null) {
+                    if ( tags.clickCatcher === null ) {
                         loadSuggestions();
                         return;
                     }
@@ -137,6 +140,65 @@
             }
         };
 
+        /**
+         * Whenever we add/remove bubble we need to show/hide inpu
+         * for non-multiselect dropdowns
+         *
+         */
+        var toggleControls = function( bubblesLength ) {
+
+            console.log('settings', settings);
+
+            if (!settings.multiselect) {
+
+                if (bubblesLength > 0) {
+                    _.hide( tags.input );
+                } else {
+                    _.show( tags.input );
+                }
+            }
+        };
+
+        /**
+         * TODO
+         */
+        var BubbleList = function () {
+
+            var list = [];
+            var ids = {}; // hash to speedup lookups
+
+            this.has = function ( id ) {
+                return ( typeof ids[ id ] !== 'undefined' );
+            };
+
+            this.add = function ( data ) {
+                var bubble = new SuggestionBubble( data );
+                list.push( bubble );
+                ids[ data.id ] = true;
+
+                toggleControls( list.length );
+            };
+
+            this.remove = function ( id, element ) {
+
+                for (var i = 0; i < list.length; i++) {
+                    if (list[i].getData().id === id) {
+                        delete ids[ id ];
+                        list.splice( i, 1);
+                        break;
+                    }
+                }
+
+                tags.holder.removeChild( element );
+                toggleControls( list.length );
+            };
+
+            this.getData = function () {
+                return list;
+            };
+
+            return this;
+        };
 
         /**
          * Suggestion bubble.
@@ -146,34 +208,30 @@
         var SuggestionBubble = function ( suggestionData ) {
 
             var fio = suggestionData.first_name + ' ' + suggestionData.last_name;
-            var index = null;
-            var holder = null;
-
-            this.add = function ( index ) {
-
-                index = index;
-
-                holder = _.createElement( 'div', 'bubble-holder' );
-                var fullname = _.createElement( 'div', 'bubble-fio' );
-                var removeBtn = _.createElement( 'div', 'bubble-action' );
-
-                fullname.appendChild( d.createTextNode( fio ) );
-                removeBtn.appendChild( _.createElement( 'div', 'icon-remove' ) );
-
-                _.addEventListener( removeBtn, 'click', this.remove );
-
-                holder.appendChild( fullname );
-                holder.appendChild( removeBtn );
-
-                tags.holder.insertBefore( holder, tags.input );
-                console.log( holder );
-            };
+            var data = suggestionData;
 
             this.remove = function () {
-                selectedSuggestions = selectedSuggestions.splice( index, 1 );
-                tags.holder.removeChild( holder );
-                console.log( 'removing bubble ', selectedSuggestions );
+                bubblesList.remove( data.id, holder );
             };
+
+            this.getData = function () {
+                return data;
+            };
+
+            // building html
+            var holder = _.createElement( 'div', 'bubble-holder' );
+            var fullname = _.createElement( 'div', 'bubble-fio' );
+            var removeBtn = _.createElement( 'div', 'bubble-action' );
+
+            fullname.appendChild( d.createTextNode( fio ) );
+            removeBtn.appendChild( _.createElement( 'div', 'icon-remove' ) );
+
+            _.addEventListener( removeBtn, 'click', this.remove );
+
+            holder.appendChild( fullname );
+            holder.appendChild( removeBtn );
+
+            tags.holder.insertBefore( holder, tags.input );
 
             return this;
         };
@@ -202,10 +260,8 @@
                 var newItem = search.items[ search.selected ].getData();
                 tags.input.value = '';
 
-                selectedSuggestions.push( newItem );
+                bubblesList.add( newItem );
 
-                var bubble = new SuggestionBubble( newItem );
-                bubble.add( selectedSuggestions.length - 1 );
 
                 // renderConfirmedSuggestion( newItem, selectedSuggestions.length - 1 );
 
@@ -236,6 +292,10 @@
 
         };
 
+        var filterAlreadyUsedSuggestions = function ( data ) {
+            return !bubblesList.has( data.id );
+        };
+
         /**
          * Main filtering function
          *
@@ -250,7 +310,7 @@
 
             // no filtering is necessary for empty value
             if ( typeof value === 'undefined' || value.length === 0 ) {
-                search.data = suggestions;
+                search.data = suggestions.filter( filterAlreadyUsedSuggestions );
                 search.value = '';
                 return;
             }
@@ -280,7 +340,12 @@
                 // console.log( searchTermLooksLikeRussian, new RegExp( _.toggleKeymap( value, searchTermLooksLikeRussian ), "i" ), searchTermLooksLikeRussian ? fio_en : fio_rus, _.toggleKeymap( value, searchTermLooksLikeRussian ) );
 
                 if ( match_ru || match_en || match_toggledKeymap ) {
-                    search.data.push( suggestions[ i ] );
+
+                    console.warn( 'AAAA ', suggestions[ i ].id );
+                    // filtering out already added suggestions
+                    if ( !bubblesList.has( suggestions[ i ].id ) ) {
+                        search.data.push( suggestions[ i ] );
+                    }
                 }
             }
 
@@ -461,11 +526,13 @@
         // preload suggestions
         loadSuggestions( '', true );
 
+        var bubblesList = new BubbleList();
+
         // some interface here
         // to get selected suggestion possibly
         return {
             'getSelected': function () {
-                return selectedSuggestions;
+                return bubblesList.getData();
             }
         };
     };

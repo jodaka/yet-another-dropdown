@@ -13,7 +13,7 @@ gulp.task('serve', ['copy'], function () {
     }
   });
 
-  gulp.watch(config.paths.src + '/css/*.css', ['copy-css']);
+  gulp.watch(config.paths.src + '/css/*.css', ['copy-styles']);
   gulp.watch(config.paths.src + '/js/*.js', ['concat', 'copy-js']);
   gulp.watch(config.paths.src + '/html/*.html', ['copy-html']);
 });
