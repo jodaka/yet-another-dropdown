@@ -137,7 +137,7 @@
      * @param  {Number} limit  limit of
      * @return {Number}        distance
      */
-    _.damerauLevenshteinDistance = (function ( source, target, limit ) {
+    _.damerauLevenshteinDistance = function ( source, target, limit ) {
 
         var matrix = [];
         for ( var i = 0; i < 64; i++ ) {
@@ -149,45 +149,42 @@
             matrix[ 0 ][ i ] = i;
         }
 
-        return function( source, target, limit ) {
-            var thisLength = source.length,
-                thatLength = target.length;
+        var thisLength = source.length,
+            thatLength = target.length;
 
-            if ( Math.abs( thisLength - thatLength ) > ( limit || 32 ) ) {
-                return limit || 32;
+        if ( Math.abs( thisLength - thatLength ) > ( limit || 32 ) ) {
+            return limit || 32;
+        }
+
+        if ( thisLength === 0 ) return thatLength;
+        if ( thatLength === 0 ) return thisLength;
+
+        // Calculate matrix.
+        var this_i, that_j, cost, min, t;
+        for ( i = 1; i <= thisLength; ++i ) {
+            this_i = source[ i - 1 ];
+
+            // Step 4
+            for (var j = 1; j <= thatLength; ++j ) {
+                // Check the jagged ld total so far
+                if ( i === j && matrix[ i ][ j ] > 4 ) return thisLength;
+
+                that_j = target[ j - 1 ];
+                cost = ( this_i === that_j ) ? 0 : 1; // Step 5
+
+                // Calculate the minimum (much faster than Math.min(...)).
+                min = matrix[ i - 1 ][ j ] + 1; // Deletion.
+                if ( ( t = matrix[ i ][ j - 1 ] + 1 ) < min ) min = t; // Insertion.
+                if ( ( t = matrix[ i - 1 ][ j - 1 ] + cost ) < min ) min = t; // Substitution.
+
+
+                // Update matrix.
+                matrix[ i ][ j ] = ( i > 1 && j > 1 && this_i === target[ j - 2 ] && source[ i - 2 ] === that_j && ( t = matrix[ i - 2 ][ j - 2 ] + cost ) < min ) ? t : min; // Transposition.
             }
+        }
 
-            if ( thisLength === 0 ) return thatLength;
-            if ( thatLength === 0 ) return thisLength;
-
-            // Calculate matrix.
-            var this_i, that_j, cost, min, t;
-            for ( var i = 1; i <= thisLength; ++i ) {
-                this_i = source[ i - 1 ];
-
-                // Step 4
-                for (var j = 1; j <= thatLength; ++j ) {
-                    // Check the jagged ld total so far
-                    if ( i === j && matrix[ i ][ j ] > 4 ) return thisLength;
-
-                    that_j = that[ j - 1 ];
-                    cost = ( this_i === that_j ) ? 0 : 1; // Step 5
-
-                    // Calculate the minimum (much faster than Math.min(...)).
-                    min = matrix[ i - 1 ][ j ] + 1; // Deletion.
-                    if ( ( t = matrix[ i ][ j - 1 ] + 1 ) < min ) min = t; // Insertion.
-                    if ( ( t = matrix[ i - 1 ][ j - 1 ] + cost ) < min ) min = t; // Substitution.
-
-
-                    // Update matrix.
-                    matrix[ i ][ j ] = ( i > 1 && j > 1 && this_i === target[ j - 2 ] && source[ i - 2 ] === that_j && ( t = matrix[ i - 2 ][ j - 2 ] + cost ) < min ) ? t : min; // Transposition.
-                }
-            }
-
-            return matrix[ thisLength ][ thatLength ];
-        };
-
-    }());
+        return matrix[ thisLength ][ thatLength ];
+    };
 
 
     /**

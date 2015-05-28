@@ -8,7 +8,9 @@
         // default settings
         var settings = {
             'use_avatars': true,
-            'multiselect': true
+            'multiselect': true,
+            'server': false,
+            'typos': false
         };
 
         // let's imagine we've included localized resources here
@@ -60,6 +62,9 @@
                     if ( typeof conf.multiselect !== 'undefined' ) {
                         settings.multiselect = conf.multiselect;
                     }
+                    if ( typeof conf.typos !== 'undefined' ) {
+                        settings.typos = conf.typos;
+                    }
                 } catch ( e ) {
                     console.warn( "Couldn't parse dropdown settings ", e );
                 }
@@ -78,12 +83,12 @@
         // };
 
         var onInputKeyPress = function ( evt ) {
-            console.log( 'input key', evt );
+            // console.log( 'input key', evt );
             loadSuggestions( tags.input.value );
         };
 
         var onInputKeyDown = function ( evt ) {
-            console.log( 'input keydown', evt );
+            // console.log( 'input keydown', evt );
 
             switch ( evt.keyCode ) {
 
@@ -151,13 +156,13 @@
          * for non-multiselect dropdowns
          *
          */
-        var toggleControls = function( bubblesLength ) {
+        var toggleControls = function ( bubblesLength ) {
 
-            console.log('settings', settings);
+            console.log( 'settings', settings );
 
-            if (!settings.multiselect) {
+            if ( !settings.multiselect ) {
 
-                if (bubblesLength > 0) {
+                if ( bubblesLength > 0 ) {
                     _.hide( tags.input );
                 } else {
                     _.show( tags.input );
@@ -187,10 +192,10 @@
 
             this.remove = function ( id, element ) {
 
-                for (var i = 0; i < list.length; i++) {
-                    if (list[i].getData().id === id) {
+                for ( var i = 0; i < list.length; i++ ) {
+                    if ( list[ i ].getData().id === id ) {
                         delete ids[ id ];
-                        list.splice( i, 1);
+                        list.splice( i, 1 );
                         break;
                     }
                 }
@@ -343,9 +348,27 @@
                 var match_en = regexp_en.test( fio_en );
 
                 var match_toggledKeymap = ( new RegExp( _.toggleKeymap( value, searchTermLooksLikeRussian ), "i" ) ).test( searchTermLooksLikeRussian ? fio_en : fio_rus );
-                // console.log( searchTermLooksLikeRussian, new RegExp( _.toggleKeymap( value, searchTermLooksLikeRussian ), "i" ), searchTermLooksLikeRussian ? fio_en : fio_rus, _.toggleKeymap( value, searchTermLooksLikeRussian ) );
 
-                if ( match_ru || match_en || match_toggledKeymap ) {
+                // Experimental typo fixing in names
+                var match_typo = false;
+                if ( settings.typos ) {
+
+                    // we gonna test only names in the range  1 < length <= 7
+                    // name and filtering value must have similar length
+                    if ( value.length > 1 && value.length <= 7 && Math.abs( suggestions[ i ].first_name.length - value.length ) <= 2 ) {
+
+                        var firstName_rus = ( fioLooksLikeRussian ) ? suggestions[ i ].first_name : _.translit( suggestions[ i ].first_name, -5 );
+                        var firstName_en = ( fioLooksLikeRussian ) ? _.translit( suggestions[ i ].first_name, 5 ) : suggestions[ i ].first_name;
+                        var valueLowerCased = value.toLowerCase();
+
+                        if ( _.damerauLevenshteinDistance( firstName_rus.toLowerCase(), valueLowerCased, 5 ) <= 2 ||
+                            _.damerauLevenshteinDistance( firstName_en.toLowerCase(), valueLowerCased, 5 ) <= 2 ) {
+                            match_typo = true;
+                        }
+                    }
+                }
+
+                if ( match_ru || match_en || match_toggledKeymap || match_typo ) {
 
                     // filtering out already added suggestions
                     if ( !bubblesList.has( suggestions[ i ].id ) ) {
@@ -513,7 +536,7 @@
 
             search.items = [];
 
-            if (search.data.length > 0) {
+            if ( search.data.length > 0 ) {
 
                 for ( var i = 0, len = search.data.length; i < len; i++ ) {
                     var item = suggestionElement( search.data[ i ], i );
@@ -523,8 +546,8 @@
 
             } else {
 
-                var noResults = _.createElement( 'div', 'no-results');
-                    noResults.appendChild( d.createTextNode( i18n.no_suggestions_found ) );
+                var noResults = _.createElement( 'div', 'no-results' );
+                noResults.appendChild( d.createTextNode( i18n.no_suggestions_found ) );
 
                 tags.suggestionHolder.appendChild( noResults );
             }
