@@ -10,7 +10,8 @@
             'use_avatars': true,
             'multiselect': true,
             'server': false,
-            'typos': false
+            'typos': false,
+            'server_url': location.protocol + '//' + location.hostname + ':8881/search?q='
         };
 
         // let's imagine we've included localized resources here
@@ -25,6 +26,8 @@
             items: [],
             selected: -1
         };
+
+        var preloadedData = null;
 
         var tags = {
             clickCatcher: null
@@ -64,6 +67,9 @@
                     }
                     if ( typeof conf.typos !== 'undefined' ) {
                         settings.typos = conf.typos;
+                    }
+                    if ( typeof conf.server !== 'undefined' ) {
+                        settings.server = conf.server;
                     }
                 } catch ( e ) {
                     console.warn( "Couldn't parse dropdown settings ", e );
@@ -281,6 +287,15 @@
         };
 
         /**
+         * Shortcut method
+         * @param  {Array} domainsList list of users filtered by domain
+         */
+        var proceedWithSuggestions = function ( data, value, domainsList ) {
+            filterSuggestions( data, value, domainsList );
+            renderSuggestions();
+        };
+
+        /**
          * TODO
          * Loading suggestions from server.
          *
@@ -288,18 +303,45 @@
          * @param  {Boolean} skipRender     if true, then it will just cache data
          * @return {Array}                  suggestions
          */
-        var loadSuggestions = function ( value, skipRender ) {
+        var loadSuggestions = function ( value ) {
 
-            _.getJSON( '/friends.json' ).then( function ( data ) {
-                if ( typeof data !== 'undefined' ) {
+            // preloading
+            if ( preloadedData === null ) {
 
-                    console.log( 'suggestions loaded' );
-                    if ( !skipRender ) {
-                        filterSuggestions( data.response.items, value );
-                        renderSuggestions();
+                _.getJSON( '/friends.json' ).then( function ( data ) {
+                    if ( typeof data !== 'undefined' ) {
+                        preloadedData = data.response.items;
+                        console.log( 'suggestions loaded' );
+                    } else {
+                        console.log( 'load suggestions error' );
+                        preloadedData = [];
                     }
+                } );
+
+                return;
+            }
+
+            // do we need domains?
+            if ( settings.server ) {
+
+                // gonna filter only if value > 1 symbol and matches our regexp
+                if ( typeof value !== 'undefined' &&
+                    value.length > 1 &&
+                    /[a-z0-9_]+/i.test( value ) ) {
+
+                    _.getJSON( settings.server_url + value ).then(
+                        function ( data ) {
+                            proceedWithSuggestions( preloadedData, value, data );
+                        },
+                        function ( err ) {
+                            proceedWithSuggestions( preloadedData, value, [] );
+                        } );
+
+                    return;
                 }
-            } );
+            }
+
+            proceedWithSuggestions( preloadedData, value, [] );
 
         };
 
@@ -315,9 +357,13 @@
          *
          * @param  {Array} suggestions  list of all suggestions
          * @param  {String} value       filtering string
+         * @param  {Array} domainsList  list of users id filtered by domain
          * @return {Array}
          */
-        var filterSuggestions = function ( suggestions, value ) {
+        var filterSuggestions = function ( suggestions, value, domainsList ) {
+
+            console.log( 'filterStarted' );
+
 
             // no filtering is necessary for empty value
             if ( typeof value === 'undefined' || value.length === 0 ) {
@@ -368,7 +414,21 @@
                     }
                 }
 
-                if ( match_ru || match_en || match_toggledKeymap || match_typo ) {
+                // Filtering by domain
+                var match_domain = false;
+
+                console.log( settings.server, domainsList );
+                if ( settings.server && domainsList.length > 0 ) {
+
+                    for ( var d = 0; d < domainsList.length; d++ ) {
+                        if ( domainsList[ d ] === suggestions[ i ].id ) {
+                            match_domain = true;
+                            break;
+                        }
+                    }
+                }
+
+                if ( match_ru || match_en || match_toggledKeymap || match_typo || match_domain ) {
 
                     // filtering out already added suggestions
                     if ( !bubblesList.has( suggestions[ i ].id ) ) {
@@ -479,6 +539,10 @@
          * @return {[type]} [description]
          */
         var hideSuggestions = function () {
+
+            if (tags.clickCatcher === null) {
+                return;
+            }
 
             // removing clicks catcher
             _.removeEventListener( tags.clickCatcher, 'click', hideSuggestions );

@@ -11,20 +11,21 @@
         <div id="content">
 
             <h3>Avatars, multiselect, no server, names typos fixing</h3>
-            <div class="aka-dropdown" data-settings='{"typos": true}'></div>
+            <div class="aka-dropdown" data-settings='{"typos": 1}'></div>
 
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-            eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
-            enim ad minim veniam, quis nostrud exercitation ullamco laboris
-            nisi ut aliquip ex ea commodo consequat.</p>
+            <p>Базовый вариант с мультиселектом, аватарками и исправлением опечаток (
+            ограничено именами и количество символов). Например, должно находить
+            "Борис" по строке "Броис" или "Анна" по строке "нана"/"аня".<br />
+            Не будет ходить на сервер за доменами.</p>
 
             <h3>No avatars, no multiselect, no server, no typos, no nothing</h3>
-            <div class="aka-dropdown" data-settings='{"use_avatars": false, "multiselect": false}'></div>
+            <div class="aka-dropdown" data-settings='{"use_avatars": 0, "multiselect": 0}'></div>
+            <p>Урезанный вариант, с отключенными опциями.</p>
 
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-            eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
-            enim ad minim veniam, quis nostrud exercitation ullamco laboris
-            nisi ut aliquip ex ea commodo consequat. </p>
+
+            <h3>Avatars, multiselect, server, no typos</h3>
+            <div class="aka-dropdown" data-settings='{"server": 1}'></div>
+            <p>Умеет ходить на сервер за доменами</p>
 
         </div>
 
