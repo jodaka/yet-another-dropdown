@@ -1,12 +1,12 @@
 html {
     background-color: #f7f7f7;
     box-sizing: border-box;
+    font-family: Lucida Grande, Arial, tahoma, verdana, sans-serif;
 }
 
 * {
     box-sizing: inherit;
 }
-
 
 #aka-dropdown-click-catcher {
     position: absolute;
@@ -18,9 +18,8 @@ html {
 }
 
 .aka-dropdown {
-    font-family: Lucida Grande, Arial, tahoma, verdana, sans-serif;
-    font-size: 14px;
 
+    font-size: 14px;
     border: 1px solid #c0cad5;
     background-color: #fff;
     width: 50%;
@@ -28,6 +27,7 @@ html {
 
 .aka-dropdown .holder {
     padding: 2px;
+    position: relative;
 }
 
 .aka-dropdown .input{
@@ -97,19 +97,24 @@ html {
 .aka-dropdown .bubble-action,
 .aka-dropdown .bubble-fio {
     display: inline-block;
-    vertical-align: middle;
+    /*vertical-align: middle;*/
 }
 
 .aka-dropdown .bubble-action {
-  padding: 0px 8px;
+    padding: 0px 8px;
 }
 
-.aka-dropdown .icon-remove {
-    width: 15px;
-    height: 23px;
-    background-image: url('http://st0.vk.me/images/pics/im_tabx_2x.png');
-    background-position: 0px 20px;
-    background-size: cover;
+.aka-dropdown .icon-arrow {
+    transform: rotateX(180deg);
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    color: #c0cad5;
+}
+
+.aka-dropdown .icon-delete:hover {
+    cursor: pointer;
+    text-shadow: 0 0 3px rgba(255,255,255,1) , 0 0 4px #ADD3FF,0 0 8px #ADD3FF, 0 0 10px #ADD3FF;
 }
 
 .aka-dropdown .no-results {

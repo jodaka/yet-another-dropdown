@@ -8,6 +8,12 @@ gulp.task( 'concat-polyfills', function () {
         .pipe( gulp.dest( config.paths.www_site + '/js/' ) );
 } );
 
+gulp.task( 'concat-styles', function () {
+    return gulp.src( [ config.paths.src + '/css/*.css', config.paths.build + '/assets/stylesheets/*.css', ] )
+        .pipe( concat( 'styles.css' ) )
+        .pipe( gulp.dest( config.paths.www_site + '/css/' ) );
+} );
+
 gulp.task( 'concat-deps', function () {
     return gulp.src( [
             config.paths.src + '/js/helpers.js',
@@ -17,4 +23,4 @@ gulp.task( 'concat-deps', function () {
         .pipe( gulp.dest( config.paths.www_site + '/js/' ) );
 } );
 
-gulp.task( 'concat', [ 'concat-polyfills', 'concat-deps' ] );
+gulp.task( 'concat', [ 'concat-polyfills', 'concat-deps', 'concat-styles' ] );

@@ -10,9 +10,14 @@ gulp.task('copy-js', function() {
 });
 
 gulp.task('copy-styles', function() {
-    gulp.src(config.paths.src + '/css/*.css')
+    gulp.src(config.paths.build + '/*.css')
           .pipe(gulp.dest(config.paths.www_site + '/css/'))
           .pipe(browserSync.reload({stream: true}));
+});
+
+gulp.task('copy-fonts', function() {
+    gulp.src(config.paths.build + '/assets/fonts/*')
+          .pipe(gulp.dest(config.paths.www_site + '/fonts/'));
 });
 
 gulp.task('copy-html', function() {
@@ -22,5 +27,5 @@ gulp.task('copy-html', function() {
 });
 
 
-gulp.task('copy',  ['copy-js', 'copy-html', 'copy-styles']);
+gulp.task('copy',  ['copy-js', 'copy-html', 'copy-styles', 'copy-fonts']);
 

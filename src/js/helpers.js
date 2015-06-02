@@ -165,7 +165,7 @@
             this_i = source[ i - 1 ];
 
             // Step 4
-            for (var j = 1; j <= thatLength; ++j ) {
+            for ( var j = 1; j <= thatLength; ++j ) {
                 // Check the jagged ld total so far
                 if ( i === j && matrix[ i ][ j ] > 4 ) return thisLength;
 
@@ -195,10 +195,10 @@
      * @param  {Boolean} isRus if true, will convert RU->EN, otherwise EN->RU
      * @return {String}
      */
-    _.toggleKeymap = (function( str, isRus ) {
+    _.toggleKeymap = ( function ( str, isRus ) {
 
         // building hashmap to speedup lookups
-        var buildKeymap = function( ) {
+        var buildKeymap = function () {
 
             var i, len, keymaps = {};
 
@@ -209,13 +209,13 @@
 
             // building ru
             keymaps.ru = {};
-            for (i = 0, len = keymappings.ru.length; i < len; i++) {
+            for ( i = 0, len = keymappings.ru.length; i < len; i++ ) {
                 keymaps.ru[ keymappings.ru[ i ] ] = keymappings.en[ i ];
             }
 
             // building en
             keymaps.en = {};
-            for (i = 0, len = keymappings.en.length; i < len; i++) {
+            for ( i = 0, len = keymappings.en.length; i < len; i++ ) {
                 keymaps.en[ keymappings.en[ i ] ] = keymappings.ru[ i ];
             }
 
@@ -224,21 +224,40 @@
 
         var keymaps = buildKeymap();
 
-        return function( str, isRus ) {
+        return function ( str, isRus ) {
 
-            var orig = (isRus) ? 'ru' : 'en';
+            var orig = ( isRus ) ? 'ru' : 'en';
             var result = '';
 
-            for (var i = 0, len = str.length; i < len; i++) {
+            for ( var i = 0, len = str.length; i < len; i++ ) {
 
-                var letter = keymaps[orig][ str[ i ]];
-                result += (typeof letter !== 'undefined') ? letter : str[i];
+                var letter = keymaps[ orig ][ str[ i ] ];
+                result += ( typeof letter !== 'undefined' ) ? letter : str[ i ];
             }
 
             return result;
         };
 
-    }());
+    }() );
+
+    // function timedChunk( items, process, context, callback ) {
+    //     var todo = items.concat(); //create a clone of the original
+
+    //     setTimeout( function () {
+
+    //         var start = +new Date();
+
+    //         do {
+    //             process.call( context, todo.shift() );
+    //         } while ( todo.length > 0 && ( +new Date() - start < 50 ) );
+
+    //         if ( todo.length > 0 ) {
+    //             setTimeout( arguments.callee, 25 );
+    //         } else {
+    //             callback( items );
+    //         }
+    //     }, 25 );
+    // }
 
 
     // everybody loves globals
