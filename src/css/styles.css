@@ -1,0 +1,119 @@
+html {
+    background-color: #FFF;
+    font-family: 'Lucida Grande', Arial, tahoma, verdana, sans-serif;
+}
+* {
+    box-sizing: inherit;
+}
+html, body {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+#content {
+    margin: 0 auto;
+    padding: 14px 22px;
+    width: 70%;
+    background-color: #f7f7f7;
+}
+#aka-dropdown-click-catcher {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 0;
+    margin: 0;
+}
+.aka-dropdown {
+    font-size: 14px;
+    border: 1px solid #c0cad5;
+    background-color: #fff;
+    width: 50%;
+    min-width: 400px;
+}
+.aka-dropdown .holder {
+    padding: 2px;
+    position: relative;
+}
+.aka-dropdown .input {
+    font-size: 14px;
+    padding: 10px 6px 11px 8px;
+    color: rgb(119, 119, 119);
+    border: 0px;
+    width: 100%;
+    box-sizing: border-box;
+}
+.aka-dropdown .input:focus {
+    border: 0px;
+    outline: none;
+    color: #000;
+}
+.aka-dropdown .suggestions-holder {
+    box-sizing: content-box;
+    position: absolute;
+    z-index: 200;
+    background-color: #FFF;
+    max-height: 400px;
+    overflow: auto;
+    border: 1px solid #c0cad5;
+}
+.aka-dropdown .suggestion:focus {
+    outline: none;
+}
+.aka-dropdown .suggestion {
+    padding: 4px 8px;
+    border-bottom: 1px solid #c0cad5;
+}
+.aka-dropdown .avatar {
+    border-radius: 4px;
+    width: 50px;
+    height: 50px;
+}
+.aka-dropdown .avatar-holder {
+    margin-right: 12px;
+}
+.aka-dropdown .avatar-holder, .aka-dropdown .fio {
+    display: inline-block;
+    vertical-align: top;
+}
+.aka-dropdown .selected {
+    background-color: #f1f5f9;
+}
+.aka-dropdown .highlight {
+    background-color: #dae2e8;
+    font-weight: bold;
+}
+.aka-dropdown .bubble-holder {
+    max-width: 94%;
+}
+.aka-dropdown .bubble-holder {
+    background-color: #45688E;
+    color: #fff;
+    border-radius: 4px;
+    padding: 4px 8px;
+    white-space: nowrap;
+    display: inline-block;
+    margin: 4px 4px;
+}
+.aka-dropdown .bubble-action, .aka-dropdown .bubble-fio {
+    display: inline-block;
+}
+.aka-dropdown .bubble-action {
+    padding: 0px 8px;
+}
+.aka-dropdown .icon-arrow {
+    position: absolute;
+    right: 10px;
+    top: 14px;
+    color: #c0cad5;
+}
+.aka-dropdown .icon-arrow:hover, .aka-dropdown .icon-delete:hover {
+    cursor: pointer;
+    text-shadow: 0 0 3px rgba(255, 255, 255, 1), 0 0 4px #ADD3FF, 0 0 8px #ADD3FF, 0 0 10px #ADD3FF;
+}
+.aka-dropdown .no-results {
+    background-color: #f1f1f1;
+    padding: 12px;
+}

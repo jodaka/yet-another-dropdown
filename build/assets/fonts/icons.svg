@@ -1,0 +1,35 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" >
+<!--
+2015-6-3: Created.
+-->
+<svg xmlns="http://www.w3.org/2000/svg">
+<metadata>
+Created by FontForge 20120731 at Wed Jun  3 07:14:59 2015
+ By Ubuntu User,,,
+Created by Ubuntu User,,, with FontForge 2.0 (http://fontforge.sf.net)
+</metadata>
+<defs>
+<font id="icons" horiz-adv-x="512" >
+  <font-face 
+    font-family="icons"
+    font-weight="500"
+    font-stretch="normal"
+    units-per-em="512"
+    panose-1="2 0 6 3 0 0 0 0 0 0"
+    ascent="448"
+    descent="-64"
+    bbox="0 -62.4053 512 448"
+    underline-thickness="25.6"
+    underline-position="-51.2"
+    unicode-range="U+0020-F101"
+  />
+    <missing-glyph />
+    <glyph glyph-name="space" unicode=" " horiz-adv-x="200" 
+ />
+    <glyph glyph-name="uniF101" unicode="&#xf101;" 
+d="M256 105.891l-256 342.109h512z" />
+    <glyph glyph-name="uniF100" unicode="&#xf100;" 
+d="M83.1348 -62.4053l-81.54 81.54l427.271 427.271l81.54 -81.54zM1.59473 364.865l81.54 81.54l427.271 -427.271l-81.54 -81.54z" />
+  </font>
+</defs></svg>

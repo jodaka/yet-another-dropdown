@@ -1,0 +1,29 @@
+{
+  "name": "yadropdown",
+  "version": "1.0.0",
+  "description": "Yet Another Dropdown (UI component)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "github.com/jodaka/yadropdown"
+  },
+  "author": "Anton Kudris",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jodaka/yadropdown/issues"
+  },
+  "homepage": "https://github.com/jodaka/yadropdown",
+  "dependencies": {
+    "browser-sync": "^2.7.5",
+    "express": "^4.12.4",
+    "gulp": "^3.8.11",
+    "gulp-base64-inline": "^1.0.3",
+    "gulp-concat": "^2.5.2",
+    "gulp-load-plugins": "^0.10.0",
+    "require-dir": "^0.3.0",
+    "run-sequence": "^1.1.0"
+  }
+}
