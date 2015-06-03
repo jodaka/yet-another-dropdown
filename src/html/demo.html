@@ -1,36 +1,53 @@
 <!doctype html>
-<html>
+<!--[if IE 8 ]><html class="ie8"><![endif]-->
+<!--[if (gt IE 8)|!(IE)]><!--><html><!--<![endif]-->
     <head>
         <meta charset="utf-8">
         <meta http-equiv="x-ua-compatible" content="ie=edge">
-        <title>DEMO</title>
+        <title>Dropdown demo</title>
         <link rel="stylesheet" href="css/styles.css" />
     </head>
     <body>
 
         <div id="content">
 
-            <h3>Avatars, multiselect, no server, names typos fixing</h3>
-            <div class="aka-dropdown" data-settings='{"typos": 1}'></div>
+            <h3>Default: avatars, multiselect, no server, no typos</h3>
+            <div class="aka-dropdown"></div>
+            <p>Базовый вариант с мультиселектом и аватарками. Будет пытаться искать по ФИО на русском и английском
+            языках с учётом неправильно выбранных раскладок.</p>
 
-            <p>Базовый вариант с мультиселектом, аватарками и исправлением опечаток (
-            ограничено именами и количество символов). Например, должно находить
-            "Борис" по строке "Броис" или "Анна" по строке "нана"/"аня".<br />
-            Не будет ходить на сервер за доменами.</p>
 
-            <h3>No avatars, no multiselect, no server, no typos, no nothing</h3>
+            <h3>Mini: No avatars, no multiselect, no server, no typos, no nothing</h3>
             <div class="aka-dropdown" data-settings='{"use_avatars": 0, "multiselect": 0}'></div>
             <p>Урезанный вариант, с отключенными опциями.</p>
 
 
-            <h3>Avatars, multiselect, server, no typos</h3>
+            <h3>Typos: avatars, multiselect, no server, typos</h3>
+            <div class="aka-dropdown" data-settings='{"typos": 1}'></div>
+            <p>Отличается от базового варианта поиском по именам с учётом опечаток. <br />
+            Например, должно находить "Борис" по строке "Броис" или "Анна" по строке "нана"/"аня".</p>
+
+
+            <h3>Domains: Avatars, multiselect, server, no typos</h3>
             <div class="aka-dropdown" data-settings='{"server": 1}'></div>
-            <p>Умеет ходить на сервер за доменами</p>
+            <p>Базовый вариант, который, плюс ко всему, пытается достучаться до сервера и получить
+            результаты для поиска по домену.<br />
+            Например, wotever должен найти Nata Koroleva</p>
+
 
         </div>
 
+        <!--
+        В итоге, бо́льшую часть полифилов я выкинул, но убрать нативные Promise
+        руки не поднялась, хотя, конечно, можно было всё реализовать и без них.
+        -->
         <script type="text/javascript" src="js/polyfills.js"></script>
+        <!-- все вспомогательные методы вынесены в helpers.js (poor man's jquery) -->
         <script type="text/javascript" src="js/helpers.js"></script>
+        <!-- ну и, собственно, код -->
         <script type="text/javascript" src="js/dropdown.js"></script>
+
+        <!-- в случае с продакшеном, js код был бы склеен при сборке в один файл,  -->
+
     </body>
 </html>

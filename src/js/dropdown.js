@@ -1,9 +1,14 @@
 ( function ( w, d ) {
     'use strict';
 
+    /**
+     * Тестовая реализация дропдауна.
+     * Имеет всего два публичных метода для скрытия списка подсказок и для
+     * получения id выбранного пользовате[ля/лей]
+     */
     var Dropdown = function ( dropdownParentTag ) {
 
-        // default settings
+        // настройки по-умолчанию
         var settings = {
             'use_avatars': true,
             'multiselect': true,
@@ -12,12 +17,14 @@
             'server_url': location.protocol + '//' + location.hostname + ':8881/search?q='
         };
 
-        // let's imagine we've included localized resources here
+        // Подразумевается, что у нас есть некий механизм локализации, который нам отдаёт
+        // строковые ресурсы. В данным случае, для простоты, это просто хэш.
         var i18n = {
             no_suggestions_found: 'Пользователь не найден',
             enter_name: 'Введите имя друга'
         };
 
+        // данные поискового запроса
         var search = {
             value: null,
             data: null,
@@ -25,33 +32,40 @@
             selected: -1
         };
 
+        // здесь бы будем хранить все имена/фамилии
         var preloadedData = null;
 
+        // обёртка для ссылок на DOM дерево элементов дропдауна
         var tags = {
             clickCatcher: null
         };
 
-        var buildDropdownHTML = function () {
-            tags.holder = _.createElement( 'div', 'holder' );
-            dropdownParentTag.appendChild( tags.holder );
+        /**
+         * Создаём DOM дерево для дропдауна
+         */
+        tags.holder = _.createElement( 'div', 'holder' );
+        dropdownParentTag.appendChild( tags.holder );
 
-            tags.input = _.createElement( 'input', 'input' );
-            tags.input.setAttribute( 'type', 'text' );
-            tags.input.setAttribute( 'placeholder', i18n.enter_name );
+        tags.bubbleHolder = _.createElement( 'div', 'bubbles-holder' );
+        tags.holder.appendChild( tags.bubbleHolder );
 
-            tags.holder.appendChild( tags.input );
+        tags.input = _.createElement( 'input', 'input' );
+        tags.input.setAttribute( 'type', 'text' );
+        tags.input.setAttribute( 'placeholder', i18n.enter_name );
 
-            tags.icon = _.createElement( 'div', 'icon-arrow' );
-            tags.holder.appendChild( tags.icon );
-        };
+        tags.holder.appendChild( tags.input );
 
-        buildDropdownHTML();
-
+        tags.icon = _.createElement( 'div', 'icon-arrow' );
+        tags.holder.appendChild( tags.icon );
+        _.addEventListener( tags.icon, 'click', function () {
+            if ( tags.clickCatcher === null ) {
+                loadSuggestions();
+                return;
+            }
+        } );
 
         /**
-         * Poor mans settings parser.
-         * @param  {[type]} conf [description]
-         * @return {[type]}      [description]
+         * Парсинг настроек дропдауна.
          */
         var parseSettings = function ( conf ) {
 
@@ -79,36 +93,42 @@
 
         parseSettings( dropdownParentTag.getAttribute( 'data-settings' ) );
 
-        // var onInputFocus = function ( evt ) {
-        //     hasFocus = true;
-        // };
+        /**
+         * Показ подсказок при нажатии на клавишу
+         */
+        var onInputKeyPress = function () {
 
-        // var onInputBlur = function ( evt ) {
-        //     hasFocus = false;
-        // };
-
-        var onInputKeyPress = function ( evt ) {
-            loadSuggestions( tags.input.value );
+            setTimeout( function () {
+                loadSuggestions( tags.input.value );
+            }, 10 );
         };
 
+        /**
+         * Обработка управляющих клавиш
+         */
         var onInputKeyDown = function ( evt ) {
 
-            switch ( evt.keyCode ) {
+            evt = evt || w.event; // thanks, IE!
+            var keyCode = evt.which || evt.keyCode;
+
+            switch ( keyCode ) {
 
                 case 27: // ESC
-                    evt.preventDefault();
+                    _.eventPreventDefault( evt );
                     hideSuggestions();
                     return;
 
                 case 13: // Enter
-                    evt.preventDefault();
-                    suggestionList.select();
+                    _.eventPreventDefault( evt );
+
+                    if ( search.selected !== -1 ) {
+                        search.items[ search.selected ].select();
+                    }
                     return;
 
                 case 40: // Down arrow
-                    evt.preventDefault();
+                    _.eventPreventDefault( evt );
 
-                    // if suggest isn't visible, let's open it
                     if ( tags.clickCatcher === null ) {
                         loadSuggestions();
                         return;
@@ -118,12 +138,12 @@
                     return;
 
                 case 38: // Up arrow
-                    evt.preventDefault();
+                    _.eventPreventDefault( evt );
                     kbdSelectSuggestion( 'prev' );
                     return false;
 
                 case 8: // Backspace
-                    setTimeout( onInputKeyPress, 0 );
+                    onInputKeyPress();
             }
 
             return true;
@@ -153,9 +173,8 @@
         };
 
         /**
-         * Whenever we add/remove bubble we need to show/hide inpu
-         * for non-multiselect dropdowns
-         *
+         * При удалании/добавлении баббла нужно прятать/показывать строку вводу
+         * в зависимости от настройки multiselect
          */
         var toggleControls = function ( bubblesLength ) {
 
@@ -165,12 +184,13 @@
                     _.hide( tags.input );
                 } else {
                     _.show( tags.input );
+                    tags.input.focus();
                 }
             }
         };
 
         /**
-         * TODO
+         * Список бабблов с вспомогательными методами для добавления/удаления оных
          */
         var bubblesList = ( function () {
             var list = [];
@@ -198,12 +218,20 @@
                     }
                 }
 
-                tags.holder.removeChild( element );
+                tags.bubbleHolder.removeChild( element );
                 toggleControls( list.length );
             };
 
+            /**
+             * Метод, возвращающий все выбранные элементы для дропдауна.
+             * В данной реализации вернёт массив id выбранных пользователей.
+             */
             var getData = function () {
-                return list;
+                var results = [];
+                for ( var i = 0; i < list.length; i++ ) {
+                    results.push( list[ i ].getData.id );
+                }
+                return results;
             };
 
             return {
@@ -216,9 +244,9 @@
         }() );
 
         /**
-         * Suggestion bubble.
-         *
-         * @param {[type]} suggestionData [description]
+         * Баббл.
+         * Хранит в себе информацию о выбранном элементе и пару методов для получения информации
+         * и удаления баббла.
          */
         var SuggestionBubble = function ( suggestionData ) {
 
@@ -233,27 +261,28 @@
             fullname.appendChild( d.createTextNode( this.fio ) );
             removeBtn.appendChild( _.createElement( 'div', 'icon-delete' ) );
 
-            // refactor bind(this)
-            _.addEventListener( removeBtn, 'click', this.remove.bind( this ) );
+            _.addEventListener( removeBtn, 'click', ( function ( self ) {
+                return function () {
+                    bubblesList.remove( self.data.id, self.holder );
+                };
+            }( this ) ) );
 
             this.holder.appendChild( fullname );
             this.holder.appendChild( removeBtn );
 
-            tags.holder.insertBefore( this.holder, tags.input );
-
+            tags.bubbleHolder.appendChild( this.holder );
         };
 
-        SuggestionBubble.prototype.remove = function () {
-            bubblesList.remove( this.data.id, this.holder );
-        };
+        // SuggestionBubble.prototype.remove = function () {
+        //     bubblesList.remove( this.data.id, this.holder );
+        // };
 
         SuggestionBubble.prototype.getData = function () {
             return this.data;
         };
 
         /**
-         * Shortcut method
-         * @param  {Array} domainsList list of users filtered by domain
+         * Вспомогательный метод, который запускает фильтрацию и отрисовку подсказок
          */
         var proceedWithSuggestions = function ( data, value, domainsList ) {
             filterSuggestions( data, value, domainsList );
@@ -261,12 +290,33 @@
         };
 
         /**
-         * TODO
-         * Loading suggestions from server.
+         * Генерируем русский и английский варианты для имени+фамилии при помощи
+         * транслитерации
+         */
+        var generateTransliterations = function ( data ) {
+
+            for ( var i = 0, len = data.length; i < len; i++ ) {
+
+                data[ i ].full_name = data[ i ].first_name + ' ' + data[ i ].last_name;
+                data[ i ].fio_isRus = /[а-я]/i.test( data[ i ].full_name );
+
+                data[ i ].fio_rus = ( data[ i ].fio_isRus ) ? data[ i ].full_name : _.translit( data[ i ].full_name, -5 );
+
+                data[ i ].fio_en = ( data[ i ].fio_isRus ) ? _.translit( data[ i ].full_name, 5 ) : data[ i ].full_name;
+            }
+        };
+
+        /**
+         * Загрузка данных для подсказок.
          *
-         * @param  {String} value           filtering value
-         * @param  {Boolean} skipRender     if true, then it will just cache data
-         * @return {Array}                  suggestions
+         * Подразумевается, что в реальной системе данные для нам уже должны быть доступны, но
+         * для тестового задания я решил сделать подгрузку стороннего json. Ответ кешируется и
+         * после нехитрой обработки сохраняется в переменную preloadedData.
+         *
+         * Если в настройках включен режим работы с сервером, то мы для каждого запроса будем
+         * стучаться к серверу и требовать от него id пользователей, удовлетворяющих условию
+         * поиска по домену.
+         *
          */
         var loadSuggestions = function ( value ) {
 
@@ -276,20 +326,21 @@
                 _.getJSON( '/friends.json' ).then( function ( data ) {
                     if ( typeof data !== 'undefined' ) {
                         preloadedData = data.response.items;
-                        // console.log( 'suggestions loaded' );
                     } else {
-                        console.log( 'load suggestions error' );
                         preloadedData = [];
                     }
+
+                    generateTransliterations( preloadedData );
                 } );
 
                 return;
             }
 
-            // do we need domains?
+            // нужен нам поиск по домену?
             if ( settings.server ) {
 
-                // gonna filter only if value > 1 symbol and matches our regexp
+                // отправляем запрос, только если он не пустой
+                // и содержит хоть несколько допустимых символов
                 if ( typeof value !== 'undefined' &&
                     value.length > 1 &&
                     /[a-z0-9_]+/i.test( value ) ) {
@@ -298,7 +349,8 @@
                         function ( data ) {
                             proceedWithSuggestions( preloadedData, value, data );
                         },
-                        function ( err ) {
+                        function () {
+                            // в случае ошибки поднимаем панику и считаем, что сервер ничего не нашел
                             proceedWithSuggestions( preloadedData, value, [] );
                         } );
 
@@ -310,74 +362,70 @@
 
         };
 
-        var filterAlreadyUsedSuggestions = function ( data ) {
-            return !bubblesList.has( data.id );
-        };
-
         /**
-         * Main filtering function
+         * Фильтрация. Она же поиск.
          *
-         * it would try to match strings in EN/RU, then it will try translit versions
-         * and toggled keymap
+         * Рассчитана только на RU и EN языки. Пытается учитывать неправильную раскладку для обоих языков.
          *
-         * @param  {Array} suggestions  list of all suggestions
-         * @param  {String} value       filtering string
-         * @param  {Array} domainsList  list of users id filtered by domain
-         * @return {Array}
+         * Есть экспериментальный режим поиска с учётом опечаток. Он ограничен длиной символов от 2 до 7 и не
+         * учитывает неправильную раскладку. И фамилию не учитывает. Только имя.
+         *
+         * Варианты с опечатками добавляются после в конце списка подсказок.
+         *
          */
         var filterSuggestions = function ( suggestions, value, domainsList ) {
 
-            // console.log( 'filterStarted' );
-            // no filtering is necessary for empty value
+            search.data = [];
+            var i, len;
+
+            // ничего не фильтруем, если критерий поиска пуст
             if ( typeof value === 'undefined' || value.length === 0 ) {
-                search.data = suggestions.filter( filterAlreadyUsedSuggestions );
+                for ( i = 0, len = suggestions.length; i < len; i++ ) {
+                    if ( !bubblesList.has( suggestions[ i ].id ) ) {
+                        search.data.push( suggestions[ i ] );
+                    }
+                }
                 search.value = '';
                 return;
             }
 
-            search.data = [];
+            var matched_typos = [];
 
+            // наивно пытаемся угадать, какой у нас язык, RU или EN в тексте запроса
             var searchTermLooksLikeRussian = /[а-я]/i.test( value );
+
             var regexp_ru = new RegExp( searchTermLooksLikeRussian ? value : _.translit( value, -5 ), "i" );
             var regexp_en = new RegExp( searchTermLooksLikeRussian ? _.translit( value, 5 ) : value, "i" );
+            var regexp_keymap = new RegExp( _.toggleKeymap( value, searchTermLooksLikeRussian ), "i" );
 
-            var toggleKeymapValue = _.toggleKeymap( value, searchTermLooksLikeRussian );
+            for ( i = 0, len = suggestions.length; i < len; i++ ) {
 
-            var regexp_keymap = new RegExp( toggleKeymapValue, "i" );
+                var match_ru = regexp_ru.test( suggestions[ i ].fio_rus );
+                var match_en = regexp_en.test( suggestions[ i ].fio_en );
 
-            for ( var i = 0, len = suggestions.length; i < len; i++ ) {
+                // console.log( suggestions[ i ].fio_rus, suggestions[ i ].fio_en, match_ru, match_en );
 
-                var fullName = suggestions[ i ].first_name + ' ' + suggestions[ i ].last_name;
-                var fioLooksLikeRussian = /[а-я]/i.test( fullName );
+                var match_toggledKeymap = regexp_keymap.test( searchTermLooksLikeRussian ? suggestions[ i ].fio_en : suggestions[ i ].fio_rus );
 
-                var fio_rus = ( fioLooksLikeRussian ) ? fullName : _.translit( fullName, -5 );
-                var fio_en = ( fioLooksLikeRussian ) ? _.translit( fullName, 5 ) : fullName;
-
-                var match_ru = regexp_ru.test( fullName );
-                var match_en = regexp_en.test( fio_en );
-
-                var match_toggledKeymap = ( new RegExp( _.toggleKeymap( value, searchTermLooksLikeRussian ), "i" ) ).test( searchTermLooksLikeRussian ? fio_en : fio_rus );
-
-                // Experimental typo fixing in names
-                var match_typo = false;
+                // экспериментальный поиск с опечатками
                 if ( settings.typos ) {
 
-                    // we gonna test only names in the range  1 < length <= 7
-                    // name and filtering value must have similar length
+                    // рассчитывается только если длина запроса от 1 до 7 символов
+                    // и разница в длине между именем и запросом не превышает 2х символов
                     if ( value.length > 1 && value.length <= 7 && Math.abs( suggestions[ i ].first_name.length - value.length ) <= 2 ) {
 
-                        var firstName_rus = ( fioLooksLikeRussian ) ? suggestions[ i ].first_name : _.translit( suggestions[ i ].first_name, -5 );
-                        var firstName_en = ( fioLooksLikeRussian ) ? _.translit( suggestions[ i ].first_name, 5 ) : suggestions[ i ].first_name;
+                        var firstName_rus = ( suggestions[ i ].fio_isRus ) ? suggestions[ i ].first_name : _.translit( suggestions[ i ].first_name, -5 );
+                        var firstName_en = ( suggestions[ i ].fio_isRus ) ? _.translit( suggestions[ i ].first_name, 5 ) : suggestions[ i ].first_name;
                         var valueLowerCased = value.toLowerCase();
 
                         if ( _.damerauLevenshteinDistance( firstName_rus.toLowerCase(), valueLowerCased, 5 ) <= 2 ||
                             _.damerauLevenshteinDistance( firstName_en.toLowerCase(), valueLowerCased, 5 ) <= 2 ) {
-                            match_typo = true;
+                            matched_typos.push( suggestions[ i ] );
                         }
                     }
                 }
 
-                // Filtering by domain
+                // фильтрация по домену
                 var match_domain = false;
 
                 if ( settings.server && domainsList.length > 0 ) {
@@ -390,55 +438,31 @@
                     }
                 }
 
-                if ( match_ru || match_en || match_toggledKeymap || match_typo || match_domain ) {
+                if ( match_ru || match_en || match_toggledKeymap || match_domain ) {
 
-                    // filtering out already added suggestions
+                    // убираем дубли
                     if ( !bubblesList.has( suggestions[ i ].id ) ) {
                         search.data.push( suggestions[ i ] );
                     }
                 }
             }
 
+            // добавляем найденный варианты с опечатками в конец массива
             search.value = value;
+            if ( settings.typos ) {
+                for ( i = 0; i < matched_typos.length; i++ ) {
+                    if ( !bubblesList.has( matched_typos[ i ].id ) ) {
+                        search.data.push( matched_typos[ i ] );
+                    }
+                }
+            }
         };
 
-
         /**
-         * TODO
-         * @param  {[type]} argument [description]
-         * @return {[type]}          [description]
-         */
-        var suggestionList = ( function () {
-
-            /**
-             * [select description]
-             * @param  {[type]} argument [description]
-             * @return {[type]}          [description]
-             */
-            var select = function ( argument ) {
-
-                if ( search.selected !== -1 ) {
-
-                    var newItem = search.items[ search.selected ].getData();
-                    tags.input.value = '';
-
-                    bubblesList.add( newItem );
-
-                    hideSuggestions();
-                }
-
-            };
-
-            return {
-                'select': select
-            };
-        }() );
-
-
-        /**
-         * TODO
-         * @param  {[type]} data       [description]
-         * @return {[type]}            [description]
+         * Подсказка.
+         * Создаёт нехитрое DOM дерево, обрабатывает события клика и mousemove
+         * и предоставляет вспомогательные методы для доступа к данным и подсветки
+         * выбранного элемента (последнее нужно для клавиатурной навигации)
          */
         var Suggestion = function ( elementData, idx ) {
 
@@ -456,7 +480,7 @@
             if ( settings.use_avatars ) {
 
                 this.tags.avatarHolder = _.createElement( 'div', 'avatar-holder' );
-                this.tags.avatar = _.createElement( 'img', 'avatar' );
+                this.tags.avatar = _.createElement( 'div', 'avatar' );
                 this.tags.avatar.style.backgroundImage = "url('" + this.data.photo_50 + "')";
                 this.tags.avatarHolder.appendChild( this.tags.avatar );
 
@@ -465,7 +489,7 @@
 
             var fio = this.data.first_name + ' ' + this.data.last_name;
 
-            // highlighting text
+            // подсвечиваем буковки в строке
             if ( search.value !== 'undefined' && search.value.length > 0 ) {
                 var r = new RegExp( search.value, "gi" );
                 fio = fio.replace( r, function ( str ) {
@@ -478,9 +502,7 @@
 
             this.tags.wrapper.appendChild( this.tags.fioHolder );
 
-            /**
-             * click on the element
-             */
+            // при движении мыши подсвечиваем элемент под курсором
             this.captureSelection = function () {
 
                 if ( search.selected > -1 ) {
@@ -491,8 +513,25 @@
                 search.items[ search.selected ].focus();
             };
 
+            // подтверждение выбора
+            this.select = function () {
+
+                if ( search.selected !== -1 ) {
+
+                    var newItem = search.items[ search.selected ].getData();
+                    tags.input.value = '';
+
+                    bubblesList.add( newItem );
+                    hideSuggestions();
+
+                    if ( settings.multiselect ) {
+                        tags.input.focus();
+                    }
+                }
+            };
+
             _.addEventListener( this.tags.html, 'mouseenter', this.captureSelection );
-            _.addEventListener( this.tags.html, 'click', suggestionList.select );
+            _.addEventListener( this.tags.html, 'click', this.select );
 
             if ( idx === search.selected ) {
                 this.focus();
@@ -512,6 +551,7 @@
                 _.addClass( this.tags.html, 'selected' );
                 this.isSelected = true;
                 this.tags.html.focus();
+                tags.input.focus(); // фокус обратно в инпут
             }
         };
 
@@ -523,10 +563,8 @@
         };
 
 
-
         /**
-         * [hideSuggestions description]
-         * @return {[type]} [description]
+         * Прячем весь список подсказок
          */
         var hideSuggestions = function () {
 
@@ -534,16 +572,15 @@
                 return;
             }
 
-            // removing clicks catcher
+            // убираем "паранжу"
             _.removeEventListener( tags.clickCatcher, 'click', hideSuggestions );
             d.body.removeChild( tags.clickCatcher );
             tags.clickCatcher = null;
 
-            // cleaning suggestions
             _.hide( tags.suggestionHolder );
             tags.suggestionHolder.innerHTML = '';
 
-            // reset
+            // чистим все параметры запроса
             search = {
                 data: null,
                 value: null,
@@ -553,15 +590,12 @@
         };
 
         /**
-         * TODO
-         * @param  {[type]} data  [description]
-         * @param  {[type]} value [description]
-         * @return {[type]}       [description]
+         * Отрисовка списка подсказок
          */
         var renderSuggestions = function () {
 
-            // console.warn( 'render suggestions', search.value );
-
+            // рисуем "паранжу", которая будет перехватывать клики вне зоны
+            // списка подсказок
             if ( tags.clickCatcher === null ) {
                 tags.clickCatcher = d.createElement( 'div' );
                 tags.clickCatcher.setAttribute( 'id', 'aka-dropdown-click-catcher' );
@@ -575,10 +609,15 @@
                 tags.suggestionHolder = _.createElement( 'div', 'suggestions-holder' );
                 dropdownParentTag.appendChild( tags.suggestionHolder );
 
-                tags.suggestionHolder.style.width = dropdownParentTag.clientWidth + 2 + 'px';
-                // to compensate for border
-                tags.suggestionHolder.style.marginLeft = '-1px';
             }
+
+            // for IE we take scrollbar width into account
+            var width = ( isIE8 ) ? dropdownParentTag.offsetWidth - 9 : dropdownParentTag.offsetWidth;
+            width -= 1;
+            tags.suggestionHolder.style.width = width + 'px';
+
+            // to compensate for border
+            tags.suggestionHolder.style.marginLeft = '-1px';
 
             _.hide( tags.suggestionHolder );
 
@@ -592,6 +631,7 @@
 
             if ( search.data.length > 0 ) {
 
+                // отрисовываем все найденные результаты
                 for ( var i = 0, len = search.data.length; i < len; i++ ) {
                     var item = new Suggestion( search.data[ i ], i );
                     search.items.push( item );
@@ -600,6 +640,7 @@
 
             } else {
 
+                // ничего не нашли
                 var noResults = _.createElement( 'div', 'no-results' );
                 noResults.appendChild( d.createTextNode( i18n.no_suggestions_found ) );
 
@@ -609,31 +650,27 @@
             _.show( tags.suggestionHolder );
         };
 
-        // _.addEventListener( this.input, 'focus', onInputFocus );
-        // _.addEventListener( this.input, 'blur', onInputBlur );
-        _.addEventListener( tags.input, 'keypress', _.debounce( onInputKeyPress, 50 ) );
+        _.addEventListener( tags.input, 'keypress', onInputKeyPress );
         _.addEventListener( tags.input, 'keydown', onInputKeyDown );
 
-        // preload suggestions
+        // подгружаем данные
         loadSuggestions( '', true );
 
         // public interface
-        this.getData = function ( argument ) {
+        this.getData = function () {
             return bubblesList.getData;
         };
 
         this.hide = function () {
             hideSuggestions();
         };
-
-        return this;
-
     };
 
 
     // Инициализируем все дропдауны на странице
     var dropdowns = [];
-    var dropdownTags = Array.prototype.slice.call( d.querySelectorAll( '.aka-dropdown' ) );
+    var dropdownTags = d.querySelectorAll( '.aka-dropdown' );
+
     for ( var i = 0; i < dropdownTags.length; i++ ) {
         dropdowns.push( new Dropdown( dropdownTags[ i ] ) );
     }
@@ -655,12 +692,25 @@
             }
         }, 50 );
 
+    var isIE8 = /ie8/.test( d.documentElement.className );
+
+    /**
+     * IE8 настолько суров, что стреляет событие resize при появлении/скрытии
+     * scrollbar. С помощью нехитрого костыля я пытаюсь игнорировать подобные
+     * события.
+     */
+    var initialWidth = d.documentElement.offsetWidth;
+
     w.onresize = function () {
 
-        hideDropdownSuggestions();
+        // IE8 fires resize when it shows/hides scrollbars
+        if ( d.documentElement.offsetWidth !== initialWidth ) {
+            hideDropdownSuggestions();
+            initialWidth = d.documentElement.offsetWidth;
+        }
 
         if ( typeof onScrollOriginal === 'function' ) {
-            onScrollOriginal.call();
+            onScrollOriginal();
         }
     };
 

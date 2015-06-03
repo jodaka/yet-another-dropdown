@@ -69,8 +69,21 @@
             el.classList.remove( className );
         } else {
             var classes = el.className.split( ' ' );
-            classes.splice( classes.indexOf( className ), 1 );
-            this.className = classes.join( ' ' );
+            var res = '';
+            for (var i = 0; i < classes.length; i++) {
+                if ( classes[i] !== className ) {
+                    res += ' ' + classes[i];
+                }
+            }
+            el.className = res;
+        }
+    };
+
+    _.eventPreventDefault = function( evt ) {
+        if (typeof evt.preventDefault === 'function') {
+            evt.preventDefault();
+        } else {
+            evt.returnValue = false;
         }
     };
 
@@ -195,7 +208,7 @@
      * @param  {Boolean} isRus if true, will convert RU->EN, otherwise EN->RU
      * @return {String}
      */
-    _.toggleKeymap = ( function ( str, isRus ) {
+    _.toggleKeymap = ( function () {
 
         // building hashmap to speedup lookups
         var buildKeymap = function () {
@@ -258,7 +271,6 @@
     //         }
     //     }, 25 );
     // }
-
 
     // everybody loves globals
     w._ = _;
